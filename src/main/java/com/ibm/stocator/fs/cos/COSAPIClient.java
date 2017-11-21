@@ -55,6 +55,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
@@ -190,6 +191,9 @@ public class COSAPIClient implements IStoreClient {
   private LocalDirAllocator directoryAllocator;
   private Path workingDir;
   private OnetimeInitialization singletoneInitTimeData;
+  private boolean tokenAuth = false;
+  private String tokenValue;
+  Properties tokenProp;
 
   private final String amazonDefaultEndpoint = "s3.amazonaws.com";
 
@@ -206,6 +210,7 @@ public class COSAPIClient implements IStoreClient {
   public void initiate(String scheme) throws IOException, ConfigurationParseException {
     mCachedSparkOriginated = new HashMap<String, Boolean>();
     mCachedSparkJobsStatus = new HashMap<String, Boolean>();
+
     schemaProvided = scheme;
     Properties props = ConfigurationHandler.initialize(filesystemURI, conf, scheme);
     // Set bucket name property
@@ -221,8 +226,10 @@ public class COSAPIClient implements IStoreClient {
     String secretKey = props.getProperty(SECRET_KEY_COS_PROPERTY);
     String apiKey = props.getProperty(API_KEY_IAM_PROPERTY);
     String token = props.getProperty(IAM_TOKEN_PROPERTY);
+    tokenValue = token;
 
     if (apiKey == null && accessKey == null && token == null) {
+      LOG.info("accessKey: {}", ACCESS_KEY_COS_PROPERTY);
       throw new ConfigurationParseException("Access KEY is empty. Please provide valid access key");
     }
     if (apiKey == null && secretKey == null && token == null) {
@@ -317,6 +324,7 @@ public class COSAPIClient implements IStoreClient {
         LOG.debug("Setting custom token");
         CustomTokenManager customToken = new CustomTokenManager(token);
         creds = new BasicIBMOAuthCredentials(customToken, serviceInstanceID);
+        tokenAuth = true;
       }
       credProvider = new AWSStaticCredentialsProvider(creds);
     } else {
@@ -591,7 +599,17 @@ public class COSAPIClient implements IStoreClient {
         LOG.debug("bucket: {}, key {}", mBucket, objName);
         PutObjectRequest putObjectRequest = new PutObjectRequest(mBucket, objName, im, om);
         Upload upload = transfers.upload(putObjectRequest);
-        upload.waitForUploadResult();
+        try {
+          upload.waitForUploadResult();
+        } catch (AmazonS3Exception e) {
+          if (tokenAuth) {
+            updateConf();
+            tokenProp = ConfigurationHandler.initialize(filesystemURI, conf, schemaProvided);
+            if (!tokenValue.equals(tokenProp.getProperty(IAM_TOKEN_PROPERTY))) {
+              initiate(schemaProvided);
+            }
+          }
+        }
         OutputStream fakeStream = new OutputStream() {
 
           @Override
@@ -969,6 +987,12 @@ public class COSAPIClient implements IStoreClient {
       directoryAllocator = new LocalDirAllocator(bufferDir);
     }
     return directoryAllocator.createTmpFileForWrite(pathStr, size, conf);
+  }
+
+  //refresh Configuration
+  public void updateConf() {
+    Configuration conf2 = new Configuration();
+    conf = conf2;
   }
 
 }
