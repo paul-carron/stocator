@@ -816,11 +816,15 @@ public class COSAPIClient implements IStoreClient {
    */
   private boolean isJobSuccessful(String objectKey) {
     if (mCachedSparkJobsStatus.containsKey(objectKey)) {
+      System.out.println("In if");
       return mCachedSparkJobsStatus.get(objectKey).booleanValue();
     }
     String key = getRealKey(objectKey);
+    System.out.println("key: " + objectKey);
     String statusKey = String.format("%s/%s", key, HADOOP_SUCCESS);
+    System.out.println("statusKey: " + statusKey);
     ObjectMetadata statusMetadata = getObjectMetadata(statusKey);
+    System.out.println("statusMetadata: " + statusMetadata);
     Boolean isJobOK = Boolean.FALSE;
     if (statusMetadata != null) {
       isJobOK = Boolean.TRUE;
