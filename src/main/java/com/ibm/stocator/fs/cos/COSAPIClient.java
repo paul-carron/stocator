@@ -271,6 +271,7 @@ public class COSAPIClient implements IStoreClient {
 
   @Override
   public void initiate(String scheme) throws IOException, ConfigurationParseException {
+    LOG.info("PC In Initiate");   //added by PC
     mCachedSparkOriginated = new HashMap<String, Boolean>();
     mCachedSparkJobsStatus = new HashMap<String, Boolean>();
     schemaProvided = scheme;
@@ -927,6 +928,7 @@ public class COSAPIClient implements IStoreClient {
 
     if (path.toString().contains("?token=")) {
       checkCreds(path);
+      refreshTransferManager(); //added by PC
       path = new Path(Utils.removeToken(path.toString()));
     }
 
