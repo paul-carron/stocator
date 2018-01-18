@@ -155,7 +155,7 @@ public class ObjectStoreGlobber {
     ObjectStoreGlobFilter globFilter = new ObjectStoreGlobFilter(pathPattern.toString(),
         prefix);
 
-    if (pathPatternString.contains("?temp_url")) {
+    if (pathPatternString.contains("?temp_url") || pathPatternString.contains("?token")) {
       FileStatus[] fs = {getFileStatus(pathPattern)};
       return fs;
     }
