@@ -1319,6 +1319,9 @@ public class COSAPIClient implements IStoreClient {
     transfers.setConfiguration(transferConfiguration);
   }
 
+  /**
+   * Refresh transfer manager when new token is passed in URI
+   */
   private void refreshTransferManager() {
     int maxThreads = Utils.getInt(conf, FS_COS, FS_ALT_KEYS, MAX_THREADS,
               DEFAULT_MAX_THREADS);
@@ -1381,6 +1384,11 @@ public class COSAPIClient implements IStoreClient {
     }
   }
 
+  /**
+   * Refresh credentials
+   * Used if a new IAM token is provided in a URI
+   * @param path object full path
+   */  
   private void checkCreds(Path path) {
     String token = Utils.extractToken(path);
     customToken = new CustomTokenManager(token);
