@@ -765,8 +765,9 @@ public class COSAPIClient implements IStoreClient {
   public FSDataOutputStream createObject(String objName, String contentType,
       Map<String, String> metadata,
       Statistics statistics) throws IOException {
-
+    boolean tokenAuthURL = false;
     if (objName.contains("?token=")) {
+      tokenAuthURL = true;
       checkCreds(new Path(objName));
       objName = Utils.removeToken(objName);
     }
@@ -815,7 +816,9 @@ public class COSAPIClient implements IStoreClient {
         }*/
         LOG.debug("bucket: {}, key {}", mBucket, objName);
 
-        refreshTransferManager();
+        if (tokenAuthURL) {
+          refreshTransferManager();
+        }
 
         PutObjectRequest putObjectRequest = new PutObjectRequest(mBucket, objName, im, om);
         Upload upload = transfers.upload(putObjectRequest);
@@ -1388,7 +1391,7 @@ public class COSAPIClient implements IStoreClient {
    * Refresh credentials
    * Used if a new IAM token is provided in a URI
    * @param path object full path
-   */  
+   */
   private void checkCreds(Path path) {
     String token = Utils.extractToken(path);
     customToken = new CustomTokenManager(token);
