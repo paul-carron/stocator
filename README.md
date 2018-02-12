@@ -16,7 +16,7 @@ Stocator is a generic connector, that may contain various implementations for ob
 * Containers / buckets are automatically created
 * Supports speculate mode
 * Stocator uses Apache httpcomponents.httpclient.version version 4.5.2 and up
- 
+
 
 ## Stocator build procedure
 
